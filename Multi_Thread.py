@@ -9,8 +9,8 @@ RECEIVE_ARBITRATION_ID = 0x123
 
 bus = can.Bus(interface = 'neovi', channel = 1, bitrate = 1000000, receive_own_messages = False)
 
-cantp_sender = CanTpTransmit(bus = bus, arbitration_id = SEND_ARBITRATION_ID, is_extended_id = False, is_fd = True)
-cantp_receiver = CanTpReceive(bus = bus, arbitration_id = RECEIVE_ARBITRATION_ID, is_extended_id = False, is_fd = True)
+cantp_sender = CanTpTransmit(bus = bus, arbitration_id = SEND_ARBITRATION_ID, is_extended_id = False, is_fd = False)
+cantp_receiver = CanTpReceive(bus = bus, arbitration_id = RECEIVE_ARBITRATION_ID, is_extended_id = False, is_fd = False)
 
 def fun_send_message():
     while True:

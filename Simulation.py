@@ -10,8 +10,8 @@ DEFINE_ARBITRATION_ID = 0x123
 bus1 = can.interface.Bus('test', interface='virtual')
 bus2 = can.interface.Bus('test', interface='virtual')
 
-cantp_sender = CanTpTransmit(bus = bus1, arbitration_id = DEFINE_ARBITRATION_ID, is_extended_id = False, is_fd = True)
-cantp_receiver = CanTpReceive(bus = bus2, arbitration_id = DEFINE_ARBITRATION_ID, is_extended_id = False, is_fd = True)
+cantp_sender = CanTpTransmit(bus = bus1, arbitration_id = DEFINE_ARBITRATION_ID, is_extended_id = False, is_fd = False)
+cantp_receiver = CanTpReceive(bus = bus2, arbitration_id = DEFINE_ARBITRATION_ID, is_extended_id = False, is_fd = False)
 
 def fun_send_message():
     while True:

@@ -17,13 +17,9 @@ class FlowState(Enum):
     FS_OVFLW            = 2         # Overflow (OVFLW)
 
 class TimeType(Enum):
-    N_AS                = 1         # Transmission time for CAN frame on sender side
+    # N_AS                = 1         # Transmission time for CAN frame on sender side
     N_BS                = 3         # Time until next FlowControl N_PDU
     N_CS                = 1         # Time until next ConsecutiveFrame N_PDU: N/A
-
-    N_AR                = 1         # Transmission time for CAN frame on receiver side
-    N_BR                = 0.5       # Time until next FlowControl N_PDU: N/A
-    N_CR                = 3         # Time until next Consecutive Frame N_PDU
 
 class CanTpTransmit:
     def __init__(self, bus, arbitration_id, is_extended_id, is_fd):
@@ -127,6 +123,7 @@ class CanTpTransmit:
         send_consecutive_time = self._handle_st_(st)
         if fs == FlowState.FS_CTS.value:
             print("Sender - Continue to send state received.")
+            self.sequence_number = 0
             for _ in range(bs):
                 time.sleep(send_consecutive_time)
                 self._send_consecutive_frame(data)
