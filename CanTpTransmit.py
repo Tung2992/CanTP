@@ -2,6 +2,9 @@ import can
 import time
 from enum import Enum
 
+
+FLOWCONTROL_ARBITRATION_ID = 0x300
+
 class FrameType(Enum):
     SINGLE_FRAME        = 0         # Single Frame (SF)
     FIRST_FRAME         = 1         # First Frame (FF)
@@ -166,7 +169,7 @@ class CanTpTransmit:
         time_start = time.time()
         while (time.time() - time_start) <= TimeType.N_BS.value:
             message : can.Message = self.bus.recv(timeout=1)
-            if message and message.arbitration_id == self.arbitration_id:
+            if message and message.arbitration_id == FLOWCONTROL_ARBITRATION_ID:
                 return self._parse_flowcontrol_frame(message)
         return None
 

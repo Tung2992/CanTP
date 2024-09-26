@@ -2,6 +2,8 @@ import can
 import time
 from enum import Enum
 
+FLOWCONTROL_ARBITRATION_ID = 0x300
+
 class FrameType(Enum):
     SINGLE_FRAME        = 0         # Single Frame (SF)
     FIRST_FRAME         = 1         # First Frame (FF)
@@ -119,7 +121,7 @@ class CanTpReceive:
     def _send_flowcontrol_frame_(self, flow_status):
         time.sleep(TimeType.N_BR.value)
         payload = [(FrameType.FLOW_CONTROL.value << 4) | flow_status.value, self.block_size, self.st_min] + [0x00] * 5
-        message = can.Message(arbitration_id=self.arbitration_id, data=payload, is_extended_id=self.is_extended_id, is_fd=self.is_fd)
+        message = can.Message(arbitration_id= FLOWCONTROL_ARBITRATION_ID, data=payload, is_extended_id=self.is_extended_id, is_fd=self.is_fd)
         self.bus.send(message)
         print("Receiver - Send flowcontrol frame", payload)
 

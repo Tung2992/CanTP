@@ -3,7 +3,6 @@ import time
 from CanTpTransmit import CanTpTransmit
 
 SEND_ARBITRATION_ID = 0x123
-RECEIVE_ARBITRATION_ID = 0x100
 
 if __name__ == "__main__":
     bus = can.Bus(interface = 'neovi', channel = 1, bitrate = 1000000, receive_own_messages = False)
