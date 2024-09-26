@@ -21,7 +21,7 @@ class TimeType(Enum):
     N_CR                = 3         # Time until next Consecutive Frame N_PDU
 
 class CanTpReceive:
-    def __init__(self, bus, arbitration_id, is_extended_id, is_fd,):
+    def __init__(self, bus, arbitration_id, is_extended_id, is_fd):
         self.bus = bus
         self.arbitration_id = arbitration_id
         self.is_extended_id = is_extended_id
