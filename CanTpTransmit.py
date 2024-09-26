@@ -1,4 +1,5 @@
 import can
+import time
 from enum import Enum
 
 class FrameType(Enum):
@@ -7,11 +8,6 @@ class FrameType(Enum):
     CONSECUTIVE_FRAME   = 2         # Consecutive Frame (CF)
     FLOW_CONTROL        = 3         # Flow Control Frame (FC)
 
-class CommunicationState(Enum):
-    OK                  = 0
-    WAIT                = 1
-    ABORT               = 2
-
 class FlowState(Enum):
     FS_CTS              = 0         # Continue To Send (CTS)
     FS_WAIT             = 1         # Wait (WAIT)
@@ -19,11 +15,12 @@ class FlowState(Enum):
 
 class TimeType(Enum):
     N_AS                = 1         # Transmission time for CAN frame on sender side
-    N_BR                = 1         # Time until next FlowControl N_PDU: N/A
-    N_AR                = 1         # Transmission time for CAN frame on receiver side
-    N_BS                = 1         # Time until next FlowControl N_PDU
+    N_BS                = 3         # Time until next FlowControl N_PDU
     N_CS                = 1         # Time until next ConsecutiveFrame N_PDU: N/A
-    N_CR                = 1         # Time until next Consecutive Frame N_PDU
+
+    N_AR                = 1         # Transmission time for CAN frame on receiver side
+    N_BR                = 0.5       # Time until next FlowControl N_PDU: N/A
+    N_CR                = 3         # Time until next Consecutive Frame N_PDU
 
 class CanTpTransmit:
     def __init__(self, bus, arbitration_id, is_extended_id, is_fd):
@@ -117,16 +114,18 @@ class CanTpTransmit:
         while not self.finish_flag:
             flow_control = self._receive_flowcontrol_frame()
             if not flow_control:
-                print("Sender - No flow control frame received.")
+                print("Sender - No flow control frame received. Timeout")
                 break
             fs, bs, st = flow_control
-            self._handle_flow_control(fs, bs, data)
+            self._handle_flow_control(fs, bs, st, data)
         print("Sender- Finished")
 
-    def _handle_flow_control(self, fs, bs, data):
+    def _handle_flow_control(self, fs, bs, st, data):
+        send_consecutive_time = self._handle_st_(st)
         if fs == FlowState.FS_CTS.value:
             print("Sender - Continue to send state received.")
             for _ in range(bs):
+                time.sleep(send_consecutive_time)
                 self._send_consecutive_frame(data)
                 if self.finish_flag:
                     break
@@ -136,6 +135,14 @@ class CanTpTransmit:
             self.finish_flag = True
             print("Sender - Overflow state received.")
 
+    def _handle_st_(self, st):
+        if 0x00 <= st <= 0x7F:
+            return st / 1000
+        elif 0xF1 <= st <= 0xF9:
+            return (st - 0xF0) / 10000
+        else:
+            return 0
+        
     def _send_consecutive_frame(self, data):
         self.sequence_number = (self.sequence_number + 1) & 0xF
         pci = [(FrameType.CONSECUTIVE_FRAME.value << 4) | self.sequence_number]
@@ -156,9 +163,11 @@ class CanTpTransmit:
         self.bus.send(message)
 
     def _receive_flowcontrol_frame(self):
-        message : can.Message = self.bus.recv(timeout=1)
-        if message:
-            return self._parse_flowcontrol_frame(message)
+        time_start = time.time()
+        while (time.time() - time_start) <= TimeType.N_BS.value:
+            message : can.Message = self.bus.recv(timeout=1)
+            if message and message.arbitration_id == self.arbitration_id:
+                return self._parse_flowcontrol_frame(message)
         return None
 
     def _parse_flowcontrol_frame(self, message):

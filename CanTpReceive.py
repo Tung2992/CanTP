@@ -13,6 +13,14 @@ class FlowState(Enum):
     FS_WAIT             = 1         # Wait (WAIT)
     FS_OVFLW            = 2         # Overflow (OVFLW)
 
+class TimeType(Enum):
+    N_AS                = 1         # Transmission time for CAN frame on sender side
+    N_BS                = 3         # Time until next FlowControl N_PDU
+    N_CS                = 1         # Time until next ConsecutiveFrame N_PDU: N/A
+
+    N_AR                = 1         # Transmission time for CAN frame on receiver side
+    N_BR                = 0.5       # Time until next FlowControl N_PDU: N/A
+    N_CR                = 3         # Time until next Consecutive Frame N_PDU
 
 class CanTpReceive:
     def __init__(self, bus, arbitration_id, is_extended_id, is_fd,):
@@ -27,8 +35,9 @@ class CanTpReceive:
         self.current_buffer_length = 0
         self.num_consecutive_frame = 0
         self.expected_data_length = 0   
-        self.block_size = 3
-        self.st_min = 10
+
+        self.block_size = 0x03
+        self.st_min = 0x0A              #0x7F - 127ms
 
     def receive_message(self):
         self.finish_flag = False
@@ -41,19 +50,25 @@ class CanTpReceive:
         key = False
         print("Receiver - Start...")
         while not self.finish_flag:
-            message : can.Message = self.bus.recv(timeout=1)
-            if message:
-               if message.arbitration_id != 0:
-                    key = True
-                    pci = message.data[0] >> 4
-                    if pci == FrameType.SINGLE_FRAME.value:
-                        self._receive_single_frame_(message)
-                    elif pci == FrameType.FIRST_FRAME.value:
-                        self._receive_first_frame_(message)
-                    elif pci == FrameType.CONSECUTIVE_FRAME.value:
-                        self._receive_consecutive_frame_(message)
-                    else:
-                        self._error_frame()
+            time_start = time.time()
+            arbitration_id_flag = False
+            while (time.time() - time_start) <= TimeType.N_CR.value:
+                message : can.Message = self.bus.recv(timeout=1)
+                if message and message.arbitration_id == self.arbitration_id:
+                    arbitration_id_flag = True
+                    break
+
+            if arbitration_id_flag == True:       
+                key = True
+                pci = message.data[0] >> 4
+                if pci == FrameType.SINGLE_FRAME.value:
+                    self._receive_single_frame_(message)
+                elif pci == FrameType.FIRST_FRAME.value:
+                    self._receive_first_frame_(message)
+                elif pci == FrameType.CONSECUTIVE_FRAME.value:
+                    self._receive_consecutive_frame_(message)
+                else:
+                    self._error_frame()
             else:
                 if key == True:
                     print("Receiver - Timeout.")
@@ -102,6 +117,7 @@ class CanTpReceive:
             self._print_data()
 
     def _send_flowcontrol_frame_(self, flow_status):
+        time.sleep(TimeType.N_BR.value)
         payload = [(FrameType.FLOW_CONTROL.value << 4) | flow_status.value, self.block_size, self.st_min] + [0x00] * 5
         message = can.Message(arbitration_id=self.arbitration_id, data=payload, is_extended_id=self.is_extended_id, is_fd=self.is_fd)
         self.bus.send(message)
