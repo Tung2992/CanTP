@@ -31,8 +31,8 @@ class CanTpTransmit:
         self.arbitration_id = arbitration_id
         self.is_extended_id = is_extended_id
         self.is_fd = is_fd
-        self.desired_lengths_classic = [8]  # CAN 2.0 payload sizes
-        self.desired_lengths_fd = [12, 16, 20, 24, 32, 48, 64]  # CAN FD payload sizes
+        self.desired_lengths_classic = [8]                      # CAN 2.0 payload sizes
+        self.desired_lengths_fd = [8, 12, 16, 20, 24, 32, 48, 64]  # CAN FD payload sizes
         self.length = None
         self.idx = 0
         self.sequence_number = 0
